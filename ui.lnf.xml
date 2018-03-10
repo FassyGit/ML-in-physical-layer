@@ -1,0 +1,6 @@
+<application>
+  <component name="UISettings">
+    <option name="COLOR_BLINDNESS" value="deuteranopia" />
+    <option name="FONT_SCALE" value="2.5" />
+  </component>
+</application>
