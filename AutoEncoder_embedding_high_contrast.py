@@ -179,10 +179,25 @@ print (X_embedded.shape)
 X_embedded = X_embedded / 7
 import matplotlib.pyplot as plt
 plt.scatter(X_embedded[:,0],X_embedded[:,1])
-#plt.axis((-2.5,2.5,-2.5,2.5)) 
+#plt.axis((-2.5,2.5,-2.5,2.5))
+plt.legend(['Autoencoeder_embedding(7,4),constellation,emb_k=16 '],loc = 'lower left')
 plt.grid()
 plt.show()
 
+x_emb = encoder_n.predict(test_label)
+noise_std = np.sqrt(1/(2*R*EbNo_train))
+noise = noise_std * np.random.randn(N,n_channel)
+x_emb = x_emb + noise
+from sklearn.manifold import TSNE
+X_embedded = TSNE(learning_rate=700, n_components=2,n_iter=35000, random_state=0, perplexity=60).fit_transform(x_emb)
+print (X_embedded.shape)
+X_embedded = X_embedded / 7
+import matplotlib.pyplot as plt
+plt.scatter(X_embedded[:,0],X_embedded[:,1])
+#plt.axis((-2.5,2.5,-2.5,2.5))
+plt.legend(['Autoencoeder_embedding(7,4),constellation,emb_k=16 '],loc = 'lower left')
+plt.grid()
+plt.show()
 
 #ccalculating BER for embedding
 EbNodB_range = list(np.linspace(-4, 8.5 ,26))
