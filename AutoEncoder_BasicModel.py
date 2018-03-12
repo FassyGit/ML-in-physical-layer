@@ -150,7 +150,7 @@ class AutoEncoder(object):
     def Draw_Constellation(self, test_data_size = 1500):
         """
 
-        :param test_data_size:
+        :param test_data_size: low-dim situation does not use this param, high-dim situation requires test_data_size to be not to big
         :return:
         """
         import matplotlib.pyplot as plt
@@ -205,7 +205,7 @@ class AutoEncoder(object):
             plt.grid()
             plt.show()
 
-    def Cal_BLER(self, bertest_data_size = 50000, EbNodB_low = -4, EbNodB_high = 8.5, EbNodB_num =26):
+    def Cal_BLER(self, bertest_data_size = 50000, EbNodB_low = -4, EbNodB_high = 8.5, EbNodB_num = 26):
         test_label = np.random.randint(self.M, size=bertest_data_size)
         test_data = []
         for i in test_label:
