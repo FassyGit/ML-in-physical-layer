@@ -6,10 +6,10 @@ import numpy as np
 EbNodB_low= -4
 EbNodB_high= 8.5
 EbNodB_num= 26
-M=4
-n_channel=2
-k=2
-emb_k=4
+M=16
+n_channel=7
+k=4
+emb_k=16
 #EbNodB_train=7
 train_data_size=10000
 bertest_data_size=70000
@@ -30,9 +30,10 @@ for train_EnNodB in Train_EbNodB_range:
     plt.yscale('log')
 
 plt.legend(fontsize='xx-small')
+plt.title('AutoEncoder,Embedding,(%d,%d)emb_k:%d'%(n_channel,k, emb_k))
 plt.xlabel('SNR_RANGE')
 plt.ylabel('Block Error Rate')
 plt.grid()
-plt.grid()
+plt.savefig('AutoEncoder,SNR_train,Embedding,(%d,%d)emb_k:%d.png'%(n_channel,k, emb_k))
 plt.show()
 
