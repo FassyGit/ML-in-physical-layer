@@ -238,18 +238,9 @@ class AutoEncoder(object):
         self.ber = ber
 
 """
-model_test = AutoEncoder(CodingMeth='Onehot',M = 16, n_channel=7, k = 4, emb_k=16,EbNodB_train = 7,train_data_size=10000)
-model_test.Initialize()
-print("Initialization Finished")
-model_test.Draw_Constellation(1500)
-
-
-model_test2 = AutoEncoder(CodingMeth='Embedding',M = 16, n_channel=7, k = 4, emb_k=16,EbNodB_train = 7,train_data_size=10000)
-model_test2.Initialize()
-print("Initialization Finished")
-model_test2.Draw_Constellation(1000)
-model_test2.Cal_BLER(test_data_size= 50000)
-
+The following codes show how to apply Class AutoEncoder
+"""
+"""
 model_test3 = AutoEncoder(CodingMeth='Embedding',M = 16, n_channel=7, k = 4, emb_k=16,EbNodB_train = 7,train_data_size=10000)
 model_test3.Initialize()
 print("Initialization Finished")
@@ -262,8 +253,7 @@ plt.xlabel('SNR_RANGE')
 plt.ylabel('Block Error Rate')
 plt.grid()
 plt.show()
-"""
-"""
+
 model_test3 = AutoEncoder(CodingMeth='Embedding',M = 16, n_channel=7, k = 4, emb_k=16, EbNodB_train = 7,train_data_size=10000)
 model_test3.Initialize()
 print("Initialization Finished")
