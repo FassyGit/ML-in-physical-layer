@@ -1,12 +1,18 @@
+#-*- coding: utf-8 -*-
+
+# -*- coding: utf-8 -*-
+
 import numpy as np
 import keras
-from keras.layers import Input, LSTM,Dense,GaussianNoise, Lambda, Dropout, embeddings,Flatten
+import tensorflow as tf
+from keras.layers import Input, LSTM, Dense,GaussianNoise, Lambda, Dropout, embeddings,Flatten
 from keras.models import Model
 from keras import regularizers
 from keras.layers.normalization import BatchNormalization
 from keras.optimizers import Adam, SGD
 from keras import backend as K
 from keras.utils.np_utils import to_categorical
+
 # for reproducing reslut
 from numpy.random import seed
 from sklearn.manifold import TSNE
@@ -33,6 +39,10 @@ class AutoEncoder(object):
         :param EbNodB_train: SNR(dB) of the AWGN channel in train process
         :param train_data_size: size of the train data
         """
+        seed(1)
+        from tensorflow import set_random_seed
+        set_random_seed(3)
+
         assert CodingMeth in ('Embedding','Onehot')
         assert M > 1
         assert n_channel > 1
@@ -45,16 +55,13 @@ class AutoEncoder(object):
         self.k = k
         self.train_data_size = train_data_size
         self.EbNodB_train = EbNodB_train
-        self.R = self.n_channel / float(self.k)
+        self.R = self.k / float(self.n_channel)
 
     def Initialize(self):
         """
 
         :return:
         """
-        seed(1)
-        from tensorflow import set_random_seed
-        set_random_seed(3)
 
         if self.CodingMeth == 'Embedding':
             print("This model used Embedding layer")
