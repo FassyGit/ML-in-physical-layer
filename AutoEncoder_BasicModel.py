@@ -123,17 +123,17 @@ class AutoEncoder(object):
 
             decoded = Dense(self.M, activation='relu')(encoded3)
             decoded1 = Dense(self.M, activation='softmax')(decoded)
-            self.autoencoder = Model(input_signal, decoded1)
+            self.auto_encoder = Model(input_signal, decoded1)
             adam = Adam(lr=0.01)
-            self.autoencoder.compile(optimizer=adam, loss='categorical_crossentropy')
+            self.auto_encoder.compile(optimizer=adam, loss='categorical_crossentropy')
 
-            print(self.autoencoder.summary())
+            print(self.auto_encoder.summary())
 
             # for tensor board visualization
             # tbCallBack = keras.callbacks.TensorBoard(log_dir='./logs', histogram_freq=0, batch_size=32, write_graph=True, write_grads=True, write_images=False, embeddings_freq=0, embeddings_layer_names=None, embeddings_metadata=None)
             # traning auto encoder
 
-            self.autoencoder.fit(train_data, train_data,
+            self.auto_encoder.fit(train_data, train_data,
                             epochs=45,
                             batch_size=32,
                             verbose = 0)
@@ -150,8 +150,8 @@ class AutoEncoder(object):
             # making decoder from full autoencoder
             encoded_input = Input(shape=(self.n_channel,))
 
-            deco = self.autoencoder.layers[-2](encoded_input)
-            deco = self.autoencoder.layers[-1](deco)
+            deco = self.auto_encoder.layers[-2](encoded_input)
+            deco = self.auto_encoder.layers[-1](deco)
             self.decoder = Model(encoded_input, deco)
 
     def Draw_Constellation(self, test_data_size = 1500):
