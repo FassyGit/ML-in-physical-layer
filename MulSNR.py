@@ -32,7 +32,8 @@ emb_k = 4
 n_channel = 2
 R = k / n_channel
 print('M:', M, 'k:', k,'emb_k:',emb_k,'n:', n_channel)
-EbNodB_trains = [-10,-5,0,5,7.5,10,15]
+#EbNodB_trains = [-10,-5,0,5,7.5,10,15]
+EbNodB_trains = [15,10,7.5,5,0,-5,-10]
 
 #generating train data
 N = 10000
@@ -42,7 +43,7 @@ label_out = label.reshape((-1,1))
 #defining an auto encoder
 # Embedding Layer
 input_signal = Input( shape = (1, ) )
-encoded = embeddings.Embedding(input_dim=M, output_dim = k,input_length= 1 )(input_signal)
+encoded = embeddings.Embedding(input_dim=M, output_dim = emb_k,input_length= 1 )(input_signal)
 encoded1 = Flatten()(encoded)
 encoded2 = Dense(M,activation= 'relu')(encoded1)
 #encoded2 = LSTM(n_channel, dropout=0.2, recurrent_dropout=0.2)(encoded)
@@ -70,6 +71,7 @@ print(auto_encoder_embedding.summary())
 for val in EbNodB_trains:
     K.set_value(EbNodB_train,[val])
     print('EbNodB_train',K.get_value(EbNodB_train))
+    print('EbNo_train', K.get_value(EbNo_train))
     auto_encoder_embedding.fit(label, label_out,
                            epochs=10,
                            batch_size=32,
