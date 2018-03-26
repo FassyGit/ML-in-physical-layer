@@ -92,15 +92,16 @@ u1_encoded = embeddings.Embedding(input_dim=M, output_dim=emb_k, input_length=1)
 u1_encoded1 = Flatten()(u1_encoded)
 u1_encoded2 = Dense(M, activation= 'relu')(u1_encoded1)
 u1_encoded3 = Dense(n_channel, activation= 'linear')(u1_encoded2)
-u1_encoded4 = Lambda(lambda x: np.sqrt(n_channel)*K.l2_normalize(x,axis=1))(u1_encoded3)
-
+#u1_encoded4 = Lambda(lambda x: np.sqrt(n_channel)*K.l2_normalize(x,axis=1))(u1_encoded3)
+u1_encoded4 = BatchNormalization(momentum=0, center=False, scale=False)(u1_encoded3)
 #user2's transmitter
 u2_input_signal = Input(shape=(1,))
 u2_encoded = embeddings.Embedding(input_dim=M, output_dim=emb_k, input_length=1)(u2_input_signal)
 u2_encoded1 = Flatten()(u2_encoded)
 u2_encoded2 = Dense(M, activation= 'relu')(u2_encoded1)
 u2_encoded3 = Dense(n_channel, activation= 'linear')(u2_encoded2)
-u2_encoded4 = Lambda(lambda x: np.sqrt(n_channel)*K.l2_normalize(x,axis=1))(u2_encoded3)
+#u2_encoded4 = Lambda(lambda x: np.sqrt(n_channel)*K.l2_normalize(x,axis=1))(u2_encoded3)
+u2_encoded4 = BatchNormalization(momentum=0, center=False, scale=False)(u2_encoded3)
 
 #mixed AWGN channel
 u1_channel_out = Lambda(lambda x: mixed_AWGN(x))([ u1_encoded4, u2_encoded4])
@@ -133,15 +134,15 @@ twouser_autoencoder.fit( [train_label_s1,train_label_s2],
 #generating the encoder and decoder for user1
 u1_encoder = Model(u1_input_signal, u1_encoded4)
 u1_encoded_input = Input(shape= (n_channel,))
-u1_deco = Model.get_layer('u1_pre_receiver')(u1_encoded_input)
-u1_deco = Model.get_layer('u1_receiver')(u1_deco)
+u1_deco = twouser_autoencoder.get_layer("u1_pre_receiver")(u1_encoded_input)
+u1_deco = twouser_autoencoder.get_layer("u1_receiver")(u1_deco)
 u1_decoder = Model(u1_encoded_input, u1_deco)
 
 #generating the encoder and decoder for user1
 u2_encoder = Model(u2_input_signal, u2_encoded4)
 u2_encoded_input = Input(shape= (n_channel,))
-u2_deco = Model.get_layer('u2_pre_receiver')(u2_encoded_input)
-u2_deco = Model.get_layer('u2_receiver')(u2_deco)
+u2_deco = twouser_autoencoder.get_layer("u2_pre_receiver")(u2_encoded_input)
+u2_deco = twouser_autoencoder.get_layer("u2_receiver")(u2_deco)
 u2_decoder = Model(u2_encoded_input, u2_deco)
 
 #plotting the constellation diagram
@@ -151,7 +152,7 @@ for i in range(M):
     u1_scatter_plot.append(u1_encoder.predict(np.expand_dims(i,axis=0)))
 u1_scatter_plot = np.array(u1_scatter_plot)
 u1_scatter_plot = u1_scatter_plot.reshape(M, 2, 1)
-plt.scatter(u1_scatter_plot[:, 0], u1_scatter_plot[:, 1])
+plt.scatter(u1_scatter_plot[:, 0], u1_scatter_plot[:, 1],color='red')
 plt.legend(['user1(2,2),emb_k=2'],loc='upper left')
 
 u2_scatter_plot = []
@@ -159,17 +160,17 @@ for i in range(M):
     u2_scatter_plot.append(u2_encoder.predict(np.expand_dims(i,axis=0)))
 u2_scatter_plot = np.array(u2_scatter_plot)
 u2_scatter_plot = u2_scatter_plot.reshape(M, 2, 1)
-plt.scatter(u2_scatter_plot[:, 0], u2_scatter_plot[:, 1])
+plt.scatter(u2_scatter_plot[:, 0], u2_scatter_plot[:, 1], color = 'blue')
 plt.legend(['user2(2,2),emb_k=2'],loc='upper left')
 plt.axis((-2.5, 2.5, -2.5, 2.5))
 plt.grid()
 fig = plt.gcf()
 fig.set_size_inches(16,12)
-fig.savefig('graph/TwoUsercons(2,2)0326_0.png',dpi=100)
+fig.savefig('graph/TwoUsercons(2,2)0326_1.png',dpi=100)
 plt.show()
 
 #ccalculating BER for embedding
-EbNodB_range = list(np.linspace(-4, 8.5 ,26))
+EbNodB_range = list(np.linspace(0, 14 ,28))
 ber = [None] * len(EbNodB_range)
 u1_ber = [None] * len(EbNodB_range)
 u2_ber = [None] * len(EbNodB_range)
@@ -212,7 +213,7 @@ plt.legend(loc='upper right',ncol= 1)
 
 fig = plt.gcf()
 fig.set_size_inches(16,12)
-fig.savefig('graph/TwoUserSNR(2,2)0326_0.png',dpi=100)
+fig.savefig('graph/TwoUserSNR(2,2)0326_1.png',dpi=100)
 plt.show()
 
 
