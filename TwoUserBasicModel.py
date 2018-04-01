@@ -58,14 +58,19 @@ class TwoUserEncoder(object):
         self.ComplexChannel = ComplexChannel
         self.n_channel = n_channel
         self.k = k
+        self.emb_k =emb_k
         self.train_datasize = train_datasize
         self.u1_EbNodB_train  =u1_EbNodB_train
         self.u2_EbNodB_train = u2_EbNodB_train
+        self.u1_EbNo_train = 10 ** (self.u1_EbNodB_train / 10.0)
+        self.u2_EbNo_train = 10 ** (self.u2_EbNodB_train / 10.0)
         self.R = self.k / float(self.n_channel)
         if ComplexChannel== True:
             self.n_channel_r = self.n_channel * 2
+            self.n_channel_c = self.n_channel
         if ComplexChannel == False:
             self.n_channel_r = self.n_channel
+            self.n_channel_c = self.n_channel
         self.u1_noise_std = np.sqrt(1 / (2 * self.R * self.u1_EbNo_train))
         self.u2_noise_std = np.sqrt(1 / (2 * self.R * self.u2_EbNo_train))
         self.alpha = K.variable(alpha)
