@@ -88,7 +88,7 @@ class AutoEncoder(object):
             ch_coeff_vec[n] = sqrt(random.gauss(0, 1) ** 2 + random.gauss(0, 1) ** 2) / sqrt(2)
         noise = K.random_normal(K.shape(x),
                                 mean=0,
-                                stddev=self.noise_std)
+                                stddev=self.noise_std/sqrt(2))
         print (K.shape(x))
         x = ch_coeff_vec * x + noise
         return x
@@ -121,8 +121,8 @@ class AutoEncoder(object):
             encoded1 = Flatten()(encoded)
             encoded2 = Dense(self.M, activation='relu')(encoded1)
             encoded3 = Dense(self.n_channel_r, activation='linear')(encoded2)
-            #encoded4 = Lambda(lambda x: np.sqrt(self.n_channel_c) * K.l2_normalize(x, axis=1))(encoded3)
-            encoded4 = BatchNormalization(momentum=0, center=False, scale=False)(encoded3)
+            encoded4 = Lambda(lambda x: np.sqrt(self.n_channel_c) * K.l2_normalize(x, axis=1))(encoded3)
+            #encoded4 = BatchNormalization(momentum=0, center=False, scale=False)(encoded3)
 
             #EbNo_train = 10 ** (self.EbNodB_train / 10.0)
             #channel_out = GaussianNoise(np.sqrt(1 / (2 * self.R * EbNo_train)))(encoded4)
@@ -283,7 +283,7 @@ class AutoEncoder(object):
             noise_mean = 0
             no_errors = 0
             nn = bertest_data_size
-            noise = noise_std * np.random.randn(nn, self.n_channel_r)
+            noise = noise_std * np.random.randn(nn, self.n_channel_r)/sqrt(2)
             if self.CodingMeth == 'Embedding':
                 encoded_signal = self.encoder.predict(test_label)
             if self.CodingMeth == 'Onehot':
@@ -292,6 +292,8 @@ class AutoEncoder(object):
             final_signal = rayleigh_coeff * encoded_signal + noise
             pred_final_signal = self.decoder.predict(final_signal)
             pred_output = np.argmax(pred_final_signal, axis=1)
+            print('pre_outputshape', pred_output.shape)
+            print('pred_finalsignalshape', pred_final_signal.shape)
             no_errors = (pred_output != test_label)
             no_errors = no_errors.astype(int).sum()
             ber[n] = no_errors / nn
@@ -327,22 +329,22 @@ plt.plot(EbNodB_range, blers,label= 'uncodedrayleigh(2,2)')
 
 EbNodB_train = 7
 model_test = AutoEncoder(ComplexChannel=True,CodingMeth='Embedding',
-                          M = 16, n_channel=7, k = 4, emb_k=16,
-                          EbNodB_train = EbNodB_train,train_data_size=100000)
+                          M = 4, n_channel=2, k = 2, emb_k=4,
+                          EbNodB_train = EbNodB_train,train_data_size=10000)
 model_test.Initialize()
 print("Initialization Finished")
 #model_test3.Draw_Constellation()
-model_test.Cal_BLER(EbNodB_low=0,EbNodB_high=20,EbNodB_num=21,bertest_data_size= 500000)
+model_test.Cal_BLER(EbNodB_low=0,EbNodB_high=20,EbNodB_num=21,bertest_data_size= 50000)
 EbNodB_range = list(np.linspace(0,20,21))
 plt.plot(EbNodB_range, model_test.ber,'bo',label='AErayleigh(2,2)')
 
 plt.yscale('log')
 plt.xlabel('SNR_RANGE')
 plt.ylabel('Block Error Rate')
-plt.title('Rayleigh_Channel(7,4),PowerConstraint，EbdB_train:%f'%EbNodB_train)
+plt.title('realRayleigh_Channel(2,2),PowerConstraint，EbdB_train:%f'%EbNodB_train)
 plt.grid()
 
 fig = plt.gcf()
 fig.set_size_inches(16,12)
-fig.savefig('graph/0424/rayleighBLER18.png',dpi=100)
+fig.savefig('graph/0501/rayleigh_real_dense_BLER_self0.png',dpi=100)
 plt.show()
