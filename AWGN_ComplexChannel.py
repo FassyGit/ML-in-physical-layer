@@ -5,7 +5,7 @@
 import numpy as np
 import keras
 import tensorflow as tf
-from keras.layers import Input, LSTM, Dense,GaussianNoise, Lambda, Dropout, embeddings,Flatten
+from keras.layers import Input, LSTM, Dense,GaussianNoise, Lambda,Add, Reshape,Dropout, embeddings,Flatten
 from keras.models import Model
 from keras import regularizers
 from keras.layers.normalization import BatchNormalization
@@ -13,7 +13,7 @@ from keras.optimizers import Adam, SGD, RMSprop
 from keras import backend as K
 from keras.utils.np_utils import to_categorical
 
-# for reproducing reslut
+# for reproducing result
 from numpy.random import seed
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
@@ -21,6 +21,7 @@ import random
 from numpy import sqrt
 from numpy import genfromtxt
 from math import pow
+from AutoEncoder_BasicModel import AutoEncoder_R
 
 #set the random state to generate the same/different  train data
 from numpy.random import seed
@@ -29,7 +30,7 @@ from  tensorflow import set_random_seed
 set_random_seed(2)
 
 
-class AutoEncoder(object):
+class AutoEncoder_C(object):
     """
     This is an API for the use of NN of an end to end communication system,
     AutoEncoder.Initialize():
@@ -77,32 +78,60 @@ class AutoEncoder(object):
         self.noise_std = np.sqrt(1 / (2 * self.R * self.EbNo_train))
 
 
-    def Rayleigh_chan(self, x, n_channel):
+    def Rayleigh_Channel(self, x, n_sample):
+       """
+
+       :param x:
+       :param n_sample:
+       :return:
+       """
+       H_R = np.random.normal(0,1, n_sample)
+       H_I = np.random.normal(0,1, n_sample)
+       real = H_R * x[:,:,0] - H_I* x[:,:,1]
+       imag = H_R * x[:,:,1]+ H_I* x[:,:,0]
+       print('realshape',K.shape(real))
+       noise_r = K.random_normal(K.shape(real),
+                          mean=0,
+                          stddev=self.noise_std)
+       noise_i = K.random_normal(K.shape(imag),
+                          mean=0,
+                          stddev=self.noise_std)
+       real = Add()([real, noise_r])
+       imag = Add()([imag, noise_i])
+       x = K.stack([real, imag], axis=2)
+       return x
+
+    def Rayleigh_Channel_test(self, x, n_sample, noise_std,test_datasize):
         """
-        real number situation,
+
         :param x:
+        :param H:
         :return:
         """
-        ch_coeff_vec = [None] * n_channel
-        for n in range(0, n_channel):
-            ch_coeff_vec[n] = sqrt(random.gauss(0, 1) ** 2 + random.gauss(0, 1) ** 2) / sqrt(2)
-        noise = K.random_normal(K.shape(x),
+        H_R = np.random.normal(0, 1, n_sample*test_datasize)
+        H_I = np.random.normal(0, 1, n_sample*test_datasize)
+        H_R = np.reshape(H_R,(-1,2))
+        H_I = np.reshape(H_I,(-1,2))
+        np.random.shuffle(H_R)
+        np.random.shuffle(H_I)
+        #x[:,:,0] is the real part of the signal
+        #x[:,:,1] is the imag part of the signal
+        real = H_R*x[:,:,0] - H_I*x[:,:,1]
+        imag = H_R*x[:,:,1] + H_I*x[:,:,0]
+        noise_r = K.random_normal(K.shape(real),
                                 mean=0,
-                                stddev=self.noise_std/sqrt(2))
-        print (K.shape(x))
-        x = ch_coeff_vec * x + noise
+                                stddev=noise_std)
+        noise_i = K.random_normal(K.shape(imag),
+                                mean=0,
+                                stddev=noise_std)
+        real = real+ noise_r
+        imag = imag+ noise_i
+        #print('realshape',real.shape)
+        #print('imagshape',imag.shape)
+        x = K.stack([real, imag],axis=2)
+        x = tf.Session().run(x)
+        #print(x.shape)
         return x
-
-    def Rayleigh_chantest(self,ber_test_datasize,n_channel):
-        ch_coeff = []
-        for i in range(0,n_channel):
-            ch_coeff_vec = [None] * ber_test_datasize
-            for n in range(0,ber_test_datasize):
-                ch_coeff_vec[n] = sqrt(random.gauss(0, 1) ** 2 + random.gauss(0, 1) ** 2) / sqrt(2)
-            ch_coeff.append(ch_coeff_vec)
-        ch_coeff = np.asarray(ch_coeff)
-        ch_coeff = np.transpose(ch_coeff)
-        return ch_coeff
 
     def Initialize(self):
         """
@@ -123,16 +152,15 @@ class AutoEncoder(object):
             encoded3 = Dense(self.n_channel_r, activation='linear')(encoded2)
             encoded4 = Lambda(lambda x: np.sqrt(self.n_channel_c) * K.l2_normalize(x, axis=1))(encoded3)
             #encoded4 = BatchNormalization(momentum=0, center=False, scale=False)(encoded3)
+            encoded5 = Reshape((-1,2))(encoded4)
+            #channel_out = Lambda(lambda x: self.Rayleigh_Channel(x, self.n_channel_c))(encoded5)
+            channel_out = GaussianNoise(np.sqrt(1 / (2 * self.R * self.EbNo_train)))(encoded5)
+            decoded = Flatten()(channel_out)
+            decoded1 = Dense(self.M, activation='relu')(decoded)
+            decoded2 = Dense(self.M, activation='softmax')(decoded1)
 
-            #EbNo_train = 10 ** (self.EbNodB_train / 10.0)
-            #channel_out = GaussianNoise(np.sqrt(1 / (2 * self.R * EbNo_train)))(encoded4)
-            channel_out = Lambda(lambda x: self.Rayleigh_chan(x, self.n_channel_r))(encoded4)
-
-            decoded = Dense(self.M, activation='relu')(channel_out)
-            decoded1 = Dense(self.M, activation='softmax')(decoded)
-
-            self.auto_encoder = Model(input_signal, decoded1)
-            adam = Adam(lr=0.001)
+            self.auto_encoder = Model(input_signal, decoded2)
+            adam = Adam(lr=0.005)
             #rms = RMSprop(lr=0.002)
             self.auto_encoder.compile(optimizer=adam,
                                            loss='sparse_categorical_crossentropy',
@@ -142,12 +170,15 @@ class AutoEncoder(object):
                                        epochs=45,
                                        batch_size=32,
                                         verbose=2)
-            self.encoder = Model(input_signal, encoded4)
-            encoded_input = Input(shape=(self.n_channel_r,))
+            self.encoder = Model(input_signal, encoded5)
+            print('encoder',self.encoder.summary())
+            encoded_input = Input(shape=(self.n_channel_c,2,))
 
-            deco = self.auto_encoder.layers[-2](encoded_input)
-            deco = self.auto_encoder.layers[-1](deco)
-            self.decoder = Model(encoded_input, deco)
+            deco = self.auto_encoder.layers[-3](encoded_input)
+            deco1 = self.auto_encoder.layers[-2](deco)
+            deco2 = self.auto_encoder.layers[-1](deco1)
+            self.decoder = Model(encoded_input, deco2)
+            print('decodersummary',self.decoder.summary())
 
         """
         The code of onehot situation remain unchaged(AWGN)
@@ -283,16 +314,18 @@ class AutoEncoder(object):
             noise_mean = 0
             no_errors = 0
             nn = bertest_data_size
-            noise = noise_std * np.random.randn(nn, self.n_channel_r)/sqrt(2)
+            noise = noise_std * np.random.randn(nn, self.n_channel_c,2)
             if self.CodingMeth == 'Embedding':
                 encoded_signal = self.encoder.predict(test_label)
             if self.CodingMeth == 'Onehot':
                 encoded_signal = self.encoder.predict(test_data)
-            rayleigh_coeff = self.Rayleigh_chantest(nn, self.n_channel_r)
-            final_signal = rayleigh_coeff * encoded_signal + noise
+            #final_signal = self.Rayleigh_Channel_test(x=encoded_signal,n_sample=self.n_channel_c,
+            #                                         noise_std=noise_std,
+            #                                          test_datasize=bertest_data_size)
+            final_signal = encoded_signal + noise
             pred_final_signal = self.decoder.predict(final_signal)
             pred_output = np.argmax(pred_final_signal, axis=1)
-            print('pre_outputshape', pred_output.shape)
+            print('pre_outputshape',pred_output.shape)
             print('pred_finalsignalshape', pred_final_signal.shape)
             no_errors = (pred_output != test_label)
             no_errors = no_errors.astype(int).sum()
@@ -318,33 +351,4 @@ plt.grid()
 plt.show()
 """
 
-EbNodB_range = list(np.linspace(0, 20, 21))
-k=2
-bers = genfromtxt('data/uncodedbpskrayleigh.csv',delimiter=',')
-bers = 1- bers
-blers = bers
-for i,ber in enumerate(bers):
-    blers[i] = 1 - pow(ber,k)
-plt.plot(EbNodB_range, blers,label= 'uncodedrayleigh(2,2)')
 
-EbNodB_train = 7
-model_test = AutoEncoder(ComplexChannel=True,CodingMeth='Embedding',
-                          M = 4, n_channel=2, k = 2, emb_k=4,
-                          EbNodB_train = EbNodB_train,train_data_size=10000)
-model_test.Initialize()
-print("Initialization Finished")
-#model_test3.Draw_Constellation()
-model_test.Cal_BLER(EbNodB_low=0,EbNodB_high=20,EbNodB_num=21,bertest_data_size= 50000)
-EbNodB_range = list(np.linspace(0,20,21))
-plt.plot(EbNodB_range, model_test.ber,'bo',label='AErayleigh(2,2)')
-
-plt.yscale('log')
-plt.xlabel('SNR_RANGE')
-plt.ylabel('Block Error Rate')
-plt.title('realRayleigh_Channel(2,2),PowerConstraint，EbdB_train:%f'%EbNodB_train)
-plt.grid()
-
-fig = plt.gcf()
-fig.set_size_inches(16,12)
-fig.savefig('graph/0501/rayleigh_real_dense_BLER_self0.png',dpi=100)
-plt.show()
