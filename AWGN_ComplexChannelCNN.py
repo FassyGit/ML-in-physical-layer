@@ -150,14 +150,15 @@ class AutoEncoder_C_CNN(object):
             encoded1 = Conv1D(filters=self.M, kernel_size=1, activation='relu')(encoded)
             encoded2 = Conv1D(filters=self.M, kernel_size=1, activation='linear')(encoded1)
             encoded3 = LSTM(units=self.n_channel_r, input_shape=(self.M,self.M),return_sequences=True)(encoded2)
-            encoded4 = Lambda(lambda x: np.sqrt(self.n_channel_c) * K.l2_normalize(x, axis=1))(encoded3)
-            encoded5 = Reshape((-1,2))(encoded4)
+            encoded4 = Flatten()(encoded3)
+            encoded5 = Lambda(lambda x: np.sqrt(self.n_channel_c) * K.l2_normalize(x, axis=1))(encoded4)
+            encoded6 = Reshape((-1,2))(encoded5)
 
-            channel_out = GaussianNoise(np.sqrt(1 / (2 * self.R * self.EbNo_train)))(encoded5)
+            channel_out = GaussianNoise(np.sqrt(1 / (2 * self.R * self.EbNo_train)))(encoded6)
 
             decoded = Reshape((self.M,self.n_channel_r),name='pre_reshape')(channel_out)
             decoded1 = Conv1D(filters=self.M, kernel_size=1, activation='relu',name='pre_receiver')(decoded)
-            decoded2 = Conv1D(filters=self.M, kernel_size=1,activation='relu', name= 'receiver')(decoded1)
+            decoded2 = Conv1D(filters=self.M, kernel_size=1,activation='softmax', name= 'receiver')(decoded1)
 
             self.auto_encoder = Model(input_signal, decoded2)
             adam = Adam(lr=0.005)
@@ -170,10 +171,13 @@ class AutoEncoder_C_CNN(object):
                                        epochs=45,
                                        batch_size=32,
                                         verbose=2)
-            self.encoder = Model(input_signal, encoded5)
+            self.encoder = Model(input_signal, encoded6)
             print('encoder',self.encoder.summary())
             channel_shape = (self.M * self.n_channel_c)
-            encoded_input = Input(shape=(channel_shape,2,))
+            if self.ComplexChannel == True:
+                encoded_input = Input(shape=(channel_shape,2,))
+            elif self.ComplexChannel ==False:
+                encoded_input = Input(shape=(channel_shape,))
             deco = self.auto_encoder.layers[-3](encoded_input)
             deco1 = self.auto_encoder.layers[-2](deco)
             deco2 = self.auto_encoder.layers[-1](deco1)
@@ -187,7 +191,7 @@ class AutoEncoder_C_CNN(object):
             print("This is the model using Onehot")
 
             # Generating train_data
-            train_data = np.random.randint(self.M, size=self.train_data_size)
+            train_data = np.random.randint(self.M, size=(self.train_data_size,self.M))
             data = []
             for i in train_data:
                 temp = np.zeros(self.M)
@@ -315,7 +319,10 @@ class AutoEncoder_C_CNN(object):
             no_errors = 0
             nn = bertest_data_size
             nn_bit = bertest_data_size *self.M
-            noise = noise_std * np.random.randn(nn, self.n_channel_c*self.M,2)
+            if self.ComplexChannel== True:
+                noise = noise_std * np.random.randn(nn, self.n_channel_c*self.M,2)
+            elif self.ComplexChannel ==False:
+                noise = noise_std * np.random.rand(nn, self.n_channel_c* self.M)
             if self.CodingMeth == 'Embedding':
                 encoded_signal = self.encoder.predict(test_label)
             if self.CodingMeth == 'Onehot':
@@ -325,9 +332,11 @@ class AutoEncoder_C_CNN(object):
             #                                          test_datasize=bertest_data_size)
             final_signal = encoded_signal + noise
             pred_final_signal = self.decoder.predict(final_signal)
+            print('pre_final_signal',pred_final_signal)
             pred_output = np.argmax(pred_final_signal, axis=2)
-            print('pre_outputshape',pred_output.shape)
-            print('pred_finalsignalshape', pred_final_signal.shape)
+            print('pred_final_signal', pred_final_signal)
+            print('pre_output', pred_output)
+            print('test_label', test_label)
             no_errors = (pred_output != test_label)
             no_errors = no_errors.astype(int).sum()
             ber[n] = no_errors / nn_bit
@@ -351,6 +360,16 @@ plt.ylabel('Block Error Rate')
 plt.grid()
 plt.show()
 """
+
+EbNodB_range = list(np.linspace(-4,8.5,26))
+k=2
+bers = genfromtxt('data/uncodedbpsk.csv',delimiter=',')
+bers = 1- bers
+blers = bers
+for i,ber in enumerate(bers):
+    blers[i] = 1 - pow(ber,k)
+plt.plot(EbNodB_range, blers,'r.-' ,label= 'uncodedbpsk(2,2)')
+
 EbNodB_train = 7
 model_test = AutoEncoder_C_CNN(ComplexChannel=True,CodingMeth='Embedding',
                           M = 4, n_channel=2, k = 2, emb_k=4,
@@ -371,6 +390,6 @@ plt.grid()
 
 fig = plt.gcf()
 fig.set_size_inches(16,12)
-fig.savefig('graph/0506/AE_AWGN_RESHAPE(2,2)6.png',dpi=150)
+fig.savefig('graph/0508/AE_AWGN_RESHAPE_CNN(2,2)1.png',dpi=150)
 plt.show()
 
