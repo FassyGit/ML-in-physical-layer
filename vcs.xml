@@ -34,6 +34,14 @@
           <option name="url" value="git@github.com:FassyGit/DistributedLearning_LLM.git" />
           <option name="userName" value="" />
         </UrlAndUserName>
+        <UrlAndUserName>
+          <option name="url" value="https://github.com/FassyGit/DistrbutedLearning_LLM.git" />
+          <option name="userName" value="" />
+        </UrlAndUserName>
+        <UrlAndUserName>
+          <option name="url" value="https://github.com/FassyGit/DistributedLearning_LLM.git" />
+          <option name="userName" value="" />
+        </UrlAndUserName>
       </list>
     </option>
     <option name="cloneParentDir" value="C:\Users\LuminLiu\PycharmProjects" />
