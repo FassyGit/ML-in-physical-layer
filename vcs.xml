@@ -90,6 +90,10 @@
           <option name="url" value="https://github.com/FassyGit/Hier_FL_splitnn.git" />
           <option name="userName" value="" />
         </UrlAndUserName>
+        <UrlAndUserName>
+          <option name="url" value="https://github.com/FassyGit/split-learning.git" />
+          <option name="userName" value="" />
+        </UrlAndUserName>
       </list>
     </option>
     <option name="cloneParentDir" value="C:\Users\LuminLiu\PycharmProjects" />
